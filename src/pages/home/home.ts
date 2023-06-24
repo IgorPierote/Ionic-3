@@ -1,25 +1,55 @@
-import { Component } from '@angular/core';
-import { NavController } from 'ionic-angular';
+import { Component, OnInit } from '@angular/core';
+import { AlertController, LoadingController, NavController } from 'ionic-angular';
 import { Carro } from '../../model/carro';
-import { HttpClient } from '@angular/common/http'
+import { HttpErrorResponse } from '@angular/common/http'
+import { CarrosServiceProvider } from '../../providers/carros-service/carros-service';
+import { NavLifeCycles } from '../../utils/ionic/nav/nav-lifecyclies';
+import { EscolhaPage } from '../escolha/escolha';
 @Component({
   selector: 'page-home',
   templateUrl: 'home.html'
 })
-export class HomePage {
+export class HomePage implements NavLifeCycles {
 
   public carros: Carro[];
 
-  constructor(public navCtrl: NavController, private _http: HttpClient) {
-    this._http.get<Carro[]>('http://localhost:8080/api/carro/listaTodos').subscribe((carros)=>{
-      this.carros = carros;
-    })
-  }
+  constructor(public _navCtrl: NavController,
+    private _loadingCtrl:LoadingController,
+    private _alertCtrl: AlertController,
+    private _carrosService: CarrosServiceProvider
+    ) {}
+
+    ionViewDidLoad(){
+      let loading = this._loadingCtrl.create({
+        content: 'Aguarde...'
+      });
+
+      loading.present();
+
+      this._carrosService.lista().subscribe((carros)=>{
+        this.carros = carros;
+
+        loading.dismiss();
+      },(error: HttpErrorResponse) =>{
+        console.log(error);
+
+        loading.dismiss();
+
+        this._alertCtrl.create({
+          title: 'Falha na conexão',
+          subTitle: 'Não foi possível carregar a lista de carros. Tente novamente mais tarde',
+          buttons: [
+            {text: 'Ok'}
+          ]
+        }).present();
+      }
+      );
+    };
+
+    selectionCar(carro: Carro) {
+      console.log(carro);
+      this._navCtrl.push(EscolhaPage.name, {
+        carroSelecionado: carro
+      });
+    }
 }
-  /*    this.itemShop = [
-      {nome: "Morning Star", preco: 2000, img:"assets/imgs/Morning_Star_-_Simon.png"},
-      {nome: "Holy Cross", preco: 1413, img: "assets/imgs/Cross.png"},
-      {nome: "Dagger", preco: 7980, img: "assets/imgs/Dagger.png"},
-      {nome: "Holy Water", preco: 8971, img: "assets/imgs/Holy_Water.png"},
-    ];
-  */
